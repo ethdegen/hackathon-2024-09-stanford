@@ -8,20 +8,20 @@ export default function Home() {
         <Image
           src="/brand.svg"
           className="mx-auto"
-          alt="motionly"
+          alt="M&A Request List Generator"
           width="120"
           height="32"
         />
         <p className="font-normal text-2xl my-8 text-center">
-          We draft{" "}
+          We generate{" "}
           <span className="font-bold text-4xl highlight">
-            discovery motions
+            M&A request lists
           </span>{" "}
-          for your litigation cases{" "}
+          for your deals{" "}
           <span className="text-3xl">automagically</span>
         </p>
         <div className="my-4 flex justify-center">
-          <Link href="/app" className="btn-blue">
+          <Link href="/input-documents" className="btn-blue">
             Start Now
           </Link>
         </div>
@@ -30,8 +30,8 @@ export default function Home() {
       <section className="my-8">
         <h2 className="font-bold text-center">How it works</h2>
         <p className="text-center my-2 text-sm text-gray-500">
-          Motion drafting has never been so easy - insert questions, review and
-          generate a motion draft!
+          M&A request list generation has never been so easy - upload documents, review, and
+          generate a comprehensive request list!
         </p>
         <div className="my-8 border border-gray-100">
           <video
@@ -51,7 +51,7 @@ export default function Home() {
       <section className="my-4">
         <h2 className="font-bold text-center">Our Mission</h2>
         <p className="text-center my-2 text-3xl text-gray-900">
-          Make litigation more accessible by lowering discovery costs!
+          Streamline M&A processes by automating due diligence request lists!
         </p>
       </section>
     </main>

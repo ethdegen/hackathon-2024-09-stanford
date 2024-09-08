@@ -1,55 +1,29 @@
-import { data } from "@/lib/data";
-import analyzeLegalDocument from "@/lib/grok/analyzeLegalDocument";
-import questionFormat from "@/lib/grok/questionFormat";
+// src/app/api/analyze/route.ts
+import { NextResponse } from 'next/server';
+import { readFile } from 'fs/promises';
+import path from 'path';
+import { generateMandARequestList } from '@/lib/generateMandARequestList';
 
-interface AnalyzeRequestBody {
-  /** Input questions from end user */
-  questions: string;
-  type: "respond" | "propound";
-}
-
-export const dynamic = "force-dynamic"; // defaults to auto
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    const res = (await request.json()) as AnalyzeRequestBody;
+    const files = ['priorPurchaseAgreement', 'priorRequestList', 'priorTermSheet', 'currentTermSheet'];
+    const fileContents = await Promise.all(files.map(async (file) => {
+      const filePath = path.join(process.cwd(), 'tmp', `${file}.txt`);
+      return readFile(filePath, 'utf-8');
+    }));
 
-    if (!res.questions) {
-      return Response.json(
-        {
-          message: "`questions` are required",
-        },
-        { status: 422 }
-      );
-    } else if (!res.type) {
-      return Response.json(
-        {
-          message: "`type` are required (respond or propound)",
-        },
-        { status: 422 }
-      );
-    }
+    const [priorPurchaseAgreement, priorRequestList, priorTermSheet, currentTermSheet] = fileContents;
 
-    // TODO: Pass res.questions & res.type into LLM
-    const initialDoc = res.questions;
-    const questions = await questionFormat(initialDoc);
-    const analysisResults = await analyzeLegalDocument(questions, res.type);
-
-    return Response.json(
-      {
-        questions: analysisResults,
-      },
-      { status: 200 }
+    const requestList = await generateMandARequestList(
+      priorPurchaseAgreement,
+      priorRequestList,
+      priorTermSheet,
+      currentTermSheet
     );
-  } catch (err) {
-    console.error(err);
 
-    return Response.json(
-      {
-        message: "An error has occurred",
-      },
-      {
-        status: 500,
-      }
-    );
+    return NextResponse.json(requestList);
+  } catch (error) {
+    console.error('Error generating request list:', error);
+    return NextResponse.json({ error: 'Failed to generate request list' }, { status: 500 });
   }
 }

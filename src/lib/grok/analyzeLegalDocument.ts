@@ -110,8 +110,8 @@ export async function generateMandARequestList(
 
   try {
     const response = await groq.chat.completions.create({
-      model: "mixtral-8x7b-32768",
-      temperature: 0.2,
+      model: "llama3-groq-8b-8192",
+      temperature: 0,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },

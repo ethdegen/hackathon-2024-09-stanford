@@ -64,7 +64,7 @@ export async function generateMotionText(
 
   // Send the prompt to the LLM
   const response = await groq.chat.completions.create({
-    model: "mixtral-8x7b-32768",
+    model: "llama3-groq-8b-8192",
     temperature: 0,
     messages: [
       {
