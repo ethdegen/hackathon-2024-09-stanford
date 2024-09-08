@@ -2,6 +2,8 @@ import { promises as fs } from "fs";
 import { GroqInstance, groqClientPromise } from "./groqClient";
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
+import { OpenAIInstance, openaiClientPromise } from "./openAIClient";
+// import { ClaudeInstance, claudeClientPromise } from './claudeClient';
 
 // Function to read file content asynchronously
 async function readFileContent(filePath: string): Promise<string> {
@@ -23,6 +25,18 @@ async function readFileContent(filePath: string): Promise<string> {
   }
 }
 
+/*async function initClaudeClient(): Promise<ClaudeInstance> {
+  try {
+    console.log("Initializing Claude client...");
+    const claude = await claudeClientPromise;
+    console.log("Claude client initialized successfully.");
+    return claude;
+  } catch (error) {
+    console.error("Error initializing Claude client:", error);
+    throw error;
+  }
+}*/
+
 // Initialize Groq Client
 async function initGroqClient(): Promise<GroqInstance> {
   try {
@@ -30,6 +44,18 @@ async function initGroqClient(): Promise<GroqInstance> {
     const groq = await groqClientPromise;
     console.log("Groq client initialized successfully.");
     return groq;
+  } catch (error) {
+    console.error("Error initializing OpenAI client:", error);
+    throw error;
+  }
+}
+
+async function initOpenAIClient(): Promise<OpenAIInstance> {
+  try {
+    console.log("Initializing OpenAI client...");
+    const openai = await openaiClientPromise;
+    console.log("OpenAI client initialized successfully.");
+    return openai;
   } catch (error) {
     console.error("Error initializing OpenAI client:", error);
     throw error;
@@ -99,7 +125,9 @@ export async function generateMandARequestList(
   const priorRequestList = await readExcelContent(priorRequestListPath);
 
   // Initialize Groq client
-  const groq = await initGroqClient();
+  // const groq = await initGroqClient();
+
+  const openai = await initOpenAIClient();
 
   // Prepare the prompt for the LLM
   const systemPrompt = `You are an experienced M&A lawyer tasked with creating a request list for a purchase agreement. 
@@ -134,14 +162,14 @@ export async function generateMandARequestList(
   Based on these documents, generate a comprehensive request list for the new purchase agreement.`;
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
       temperature: 0,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      max_tokens: 4000,
+      max_tokens: 128000,
     });
 
     const generatedList: RequestListItem[] = JSON.parse(response.choices[0].message.content.trim());
@@ -150,106 +178,4 @@ export async function generateMandARequestList(
     console.error("Error generating M&A request list:", error);
     throw error;
   }
-}
-
-export default async function analyzeLegalDocument(
-  questions: string[],
-  user: string
-): Promise<any[]> {
-  const interrInfoFilePath = "public/data/interrogatories.txt";
-  const legalRulesFilePath = "public/data/legalRules.txt";
-  const trainingFilePath = "public/data/training.txt";
-  const results = [];
-
-  // Read files asynchronously
-  const [interrInfo, legalRules, training] = await Promise.all([
-    readFileContent(interrInfoFilePath),
-    readFileContent(legalRulesFilePath),
-    readFileContent(trainingFilePath),
-  ]);
-
-  // Initialize Groq client
-  const groq = await initGroqClient();
-  console.log("Questions received:", questions);
-
-  let systemPromptContent;
-
-  if (user === "respond") {
-    systemPromptContent = `Responding party: You are a litigator in California asked to analyze special interrogatories from the opposing counsel. You need to determine whether they meet the guidelines provided in ${legalRules}. If it is plain and simple whether or not a special interrogatory violates the rule, explain how. If it is a bit ambiguous, argue to the best of your ability why it violates the rule and explain how. Please answer in a numbered list. If the question does not violate the rules, simply return the question. If it does violate the rules, return the question and provide your explanation in a “Diagnosis:” field. Do not provide help to our opponents on how to restructure their interrogatories if they violate the rules, just explain how they violate them. Here is some training data ${training}. Here is some additional info about interrogatories: ${interrInfo}`;
-  } else {
-    systemPromptContent = `Propounding party: You are a litigator in California asked to analyze special interrogatories from the opposing counsel. You need to determine whether they meet the guidelines provided in ${legalRules}. If it is plain and simple whether or not a special interrogatory violates the rule, explain how. If it is a bit ambiguous, argue to the best of your ability why it does not violate the rule and explain how. Please answer in a numbered list. If the question does not violate the rules, simply return the question. If it does violate the rules, return the question and provide your explanation in a “Diagnosis:” field. Do not provide help to our opponents on how to restructure their interrogatories if they violate the rules, just explain how they violate them. Here is some training data ${training}. Here is some additional info about interrogatories: ${interrInfo}`;
-  }
-
-  for (let i = 0; i < questions.length; i++) {
-    const question = questions[i];
-    // Groq API request
-    try {
-      // Providing diagnosis
-      console.log(`Processing question ${i + 1}:`, question);
-      const response = await groq.chat.completions.create({
-        model: "mixtral-8x7b-32768",
-        temperature: 0,
-        messages: [
-          {
-            role: "system",
-            content: systemPromptContent,
-          },
-          {
-            role: "user",
-            content: question,
-          },
-        ],
-        max_tokens: 2048,
-      });
-
-      const analysis = response.choices[0].message.content.trim();
-
-      // Determine pass or fail based on analysis content
-      const passFailCheck = await groq.chat.completions.create({
-        model: "mixtral-8x7b-32768",
-        temperature: 0,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Determine whether the following analysis is saying that an interrogatory is in violation of the rules. If it is, say 'Fail', if it isn't, say 'Pass'. Restrict your responses to ONLY 'Pass' and 'Fail'. DO NOT EXPLAIN YOUR DECISION.",
-          },
-          {
-            role: "user",
-            content: analysis,
-          },
-        ],
-        max_tokens: 350,
-      });
-
-      let fullResponse = passFailCheck.choices[0].message.content.trim();
-      // Use regex to match only the first occurrence of "Pass" or "Fail"
-      const matchResults = fullResponse.match(/^(Pass|Fail)/);
-
-      // If match is found, use the matched word; otherwise, default to an error or unknown state
-      const passFail = matchResults ? matchResults[0] : "Unknown";
-
-      results.push({
-        questionNumber: i + 1,
-        question: question,
-        analysis: analysis,
-        passFail: passFail,
-      });
-    } catch (error) {
-      console.error(
-        "Error making API request to Groq for question ",
-        i + 1,
-        ": ",
-        error
-      );
-      // Instead of throwing error, push an error state into the results
-      results.push({
-        questionNumber: i + 1,
-        question,
-        analysis: "Analysis failed due to an error.",
-        passFail: "Error",
-      });
-    }
-  }
-  return results;
 }

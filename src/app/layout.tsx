@@ -5,8 +5,8 @@ import Head from "next/head";
 import { ClerkProvider } from "@clerk/nextjs";
 
 export const metadata: Metadata = {
-  title: "motionly - Discovery motions drafted automagically",
-  description: "Discovery motions drafted automagically",
+  title: "marty - M&A request lists drafted automagically",
+  description: "M&A request lists drafted automagically",
 };
 
 export default function RootLayout({
