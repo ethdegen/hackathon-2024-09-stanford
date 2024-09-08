@@ -1,8 +1,12 @@
 import { promises as fs } from "fs";
-import { GroqInstance, groqClientPromise } from "./groqClient";
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
-import ollama from "ollama"
+import { Ollama } from "ollama"
+import fetch from "node-fetch"
+
+const ollama = new Ollama({
+  fetch: fetch as any
+});
 
 // Function to read file content asynchronously
 async function readFileContent(filePath: string): Promise<string> {
@@ -20,19 +24,6 @@ async function readFileContent(filePath: string): Promise<string> {
     }
   } catch (error) {
     console.error(`Error reading file at ${filePath}:`, error);
-    throw error;
-  }
-}
-
-// Initialize Groq Client
-async function initGroqClient(): Promise<GroqInstance> {
-  try {
-    console.log("Initializing Groq client...");
-    const groq = await groqClientPromise;
-    console.log("Groq client initialized successfully.");
-    return groq;
-  } catch (error) {
-    console.error("Error initializing OpenAI client:", error);
     throw error;
   }
 }
@@ -99,9 +90,6 @@ export async function generateMandARequestList(
   // Read and process the Excel file
   const priorRequestList = await readExcelContent(priorRequestListPath);
 
-  // Initialize Groq client
-  const groq = await initGroqClient();
-
   // Prepare the prompt for the LLM
   const systemPrompt = `You are an experienced M&A lawyer tasked with creating a request list for a purchase agreement. 
   Analyze the provided documents and generate a comprehensive request list. 
@@ -136,7 +124,6 @@ export async function generateMandARequestList(
 
   try {
     const response = await ollama.chat({
-
       model: "llama3.1:70b-instruct-q2_K",
       messages: [
         { role: "system", content: systemPrompt },
@@ -167,10 +154,6 @@ export default async function analyzeLegalDocument(
     readFileContent(legalRulesFilePath),
     readFileContent(trainingFilePath),
   ]);
-
-  // Initialize Groq client
-  const groq = await initGroqClient();
-  console.log("Questions received:", questions);
 
   let systemPromptContent;
 
