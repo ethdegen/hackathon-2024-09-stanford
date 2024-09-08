@@ -2,6 +2,7 @@ import { promises as fs } from "fs";
 import { GroqInstance, groqClientPromise } from "./groqClient";
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
+import ollama from "ollama"
 
 // Function to read file content asynchronously
 async function readFileContent(filePath: string): Promise<string> {
@@ -134,17 +135,16 @@ export async function generateMandARequestList(
   Based on these documents, generate a comprehensive request list for the new purchase agreement.`;
 
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
-      temperature: 0,
+    const response = await ollama.chat({
+
+      model: "llama3.1:70b-instruct-q2_K",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      max_tokens: 4000,
     });
 
-    const generatedList: RequestListItem[] = JSON.parse(response.choices[0].message.content.trim());
+    const generatedList: RequestListItem[] = JSON.parse(response.message.content.trim());
     return generatedList;
   } catch (error) {
     console.error("Error generating M&A request list:", error);
@@ -186,9 +186,8 @@ export default async function analyzeLegalDocument(
     try {
       // Providing diagnosis
       console.log(`Processing question ${i + 1}:`, question);
-      const response = await groq.chat.completions.create({
-        model: "mixtral-8x7b-32768",
-        temperature: 0,
+      const response = await ollama.chat({
+        model: "llama3.1:70b-instruct-q2_K",
         messages: [
           {
             role: "system",
@@ -199,15 +198,13 @@ export default async function analyzeLegalDocument(
             content: question,
           },
         ],
-        max_tokens: 2048,
       });
 
-      const analysis = response.choices[0].message.content.trim();
+      const analysis = response.message.content.trim();
 
       // Determine pass or fail based on analysis content
-      const passFailCheck = await groq.chat.completions.create({
-        model: "mixtral-8x7b-32768",
-        temperature: 0,
+      const passFailCheck = await ollama.chat({
+        model: "llama3.1:70b-instruct-q2_K",
         messages: [
           {
             role: "system",
@@ -219,10 +216,9 @@ export default async function analyzeLegalDocument(
             content: analysis,
           },
         ],
-        max_tokens: 350,
       });
 
-      let fullResponse = passFailCheck.choices[0].message.content.trim();
+      let fullResponse = passFailCheck.message.content.trim();
       // Use regex to match only the first occurrence of "Pass" or "Fail"
       const matchResults = fullResponse.match(/^(Pass|Fail)/);
 
