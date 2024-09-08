@@ -1,0 +1,31 @@
+Interrogatories:
+An interrogatory is a written question used in legal proceedings.
+It can be general and cover a wide range of topics.
+Interrogatories are often part of the discovery process in a lawsuit.
+They help gather information from the opposing party.
+Examples of interrogatories:
+“Describe the events leading up to the incident.”
+“List all witnesses to the accident.”
+Special Interrogatories:
+A special interrogatory is also a written question.
+It is more specific and tailored to the case.
+Special interrogatories focus on particular issues relevant to the lawsuit.
+Unlike form interrogatories, they are customized for the specific situation.
+Examples of special interrogatories:
+“Provide details about the contract signed on June 15, 2022.”
+“Explain the basis for your claim of damages.”
+In summary, while both types serve similar purposes, special interrogatories are more targeted and case-specific, whereas regular interrogatories can cover a broader range of topics. 
+
+Subparts:
+Subparts refer to multiple components within a single question.
+For example, if an interrogatory asks, “List all the witnesses, their addresses, and their phone numbers,” it contains subparts (witnesses, addresses, and phone numbers).
+Compound Question:
+A compound question combines two or more distinct inquiries into one.
+For instance, “Explain your actions during the incident and provide any relevant documents” is a compound question because it asks for both an explanation and documents.
+Conjunctive Question:
+A conjunctive question uses the word “and” to connect multiple conditions.
+For example, “Did you witness the accident and take any photographs?” is a conjunctive question because it combines witnessing and photograph-taking.
+Disjunctive Question:
+A disjunctive question uses the word “or” to present alternative options.
+For instance, “Did you attend the meeting or submit a written report?” is a disjunctive question because it offers two distinct choices.
+In summary, special interrogatories must be straightforward, without subparts, and cannot be compound, conjunctive, or disjunctive. This ensures clarity and simplicity in legal questioning.

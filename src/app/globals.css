@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-violet {
+    @apply disabled:opacity-75 py-2 px-5 transition-all ease-in-out bg-violet-500 hover:bg-violet-700 focus:ring-violet-400 text-white font-semibold rounded-full shadow-md  focus:outline-none focus:ring focus:ring-opacity-75;
+  }
+
+  .btn-blue {
+    @apply disabled:opacity-75 py-2 px-5 transition-all ease-in-out bg-blue-500 hover:bg-blue-700 focus:ring-blue-400 text-white font-semibold rounded-full shadow-md  focus:outline-none focus:ring focus:ring-opacity-75;
+  }
+}
+
+body {
+  font-family: 'Archivo Variable', sans-serif;
+  color: rgb(19, 30, 65);
+}
+
+.highlight {
+  background: linear-gradient(315deg,#1c7df1 50%,#46c6fd 100%,#64a2f9);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cl-card.cl-card > div:last-child {
+  display: none;
+}
