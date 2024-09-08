@@ -1,15 +1,25 @@
 import { promises as fs } from "fs";
 import { GroqInstance, groqClientPromise } from "./groqClient";
 import { utils, write } from 'xlsx';
+import mammoth from 'mammoth';
 
 // Function to read file content asynchronously
 async function readFileContent(filePath: string): Promise<string> {
   try {
-    const content = await fs.readFile(filePath, "utf8");
-    return content;
+    const fileExtension = filePath.split('.').pop()?.toLowerCase();
+    
+    if (fileExtension === 'docx') {
+      const buffer = await fs.readFile(filePath);
+      const result = await mammoth.extractRawText({ buffer });
+      return result.value;
+    } else {
+      // Assume it's a txt file
+      const content = await fs.readFile(filePath, "utf8");
+      return content;
+    }
   } catch (error) {
     console.error(`Error reading file at ${filePath}:`, error);
-    throw error; // Rethrow to ensure the caller can react
+    throw error;
   }
 }
 
@@ -31,7 +41,7 @@ interface RequestListItem {
   ItemDescription: string;
   Status: string;
   Priority: string;
-  Date Received: string;
+  DateReceived: string;
   LLMExplanation: string;
   CompanysResponse: string;
   Comments: string;
@@ -58,6 +68,19 @@ async function convertToExcel(requestList: RequestListItem[]): Promise<Blob> {
   return blob;
 }
 
+async function readExcelContent(filePath: string): Promise<string> {
+  try {
+    const buffer = await fs.readFile(filePath);
+    const workbook = read(buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const jsonData = utils.sheet_to_json(sheet);
+    return JSON.stringify(jsonData, null, 2);
+  } catch (error) {
+    console.error(`Error reading Excel file at ${filePath}:`, error);
+    throw error;
+  }
+}
 
 export async function generateMandARequestList(
   priorPurchaseAgreementPath: string,
@@ -66,12 +89,14 @@ export async function generateMandARequestList(
   currentTermSheetPath: string
 ): Promise<RequestListItem[]> {
   // Read files asynchronously
-  const [priorPurchaseAgreement, priorRequestList, priorTermSheet, currentTermSheet] = await Promise.all([
+  const [priorPurchaseAgreement, priorTermSheet, currentTermSheet] = await Promise.all([
     readFileContent(priorPurchaseAgreementPath),
-    readFileContent(priorRequestListPath),
     readFileContent(priorTermSheetPath),
     readFileContent(currentTermSheetPath),
   ]);
+
+  // Read and process the Excel file
+  const priorRequestList = await readExcelContent(priorRequestListPath);
 
   // Initialize Groq client
   const groq = await initGroqClient();
@@ -86,7 +111,7 @@ export async function generateMandARequestList(
     "ItemDescription": "Detailed description of the item",
     "Status": "",
     "Priority": "",
-    "Date Received": "",
+    "DateReceived": "",
     "LLMExplanation": "Explanation of how this information relates to drafting a purchase agreement",
     "CompanysResponse": "",
     "Comments": "",
@@ -97,7 +122,7 @@ export async function generateMandARequestList(
   const userPrompt = `Prior Purchase Agreement:
   ${priorPurchaseAgreement}
   
-  Prior Request List:
+  Prior Request List (in JSON format):
   ${priorRequestList}
   
   Prior Term Sheet:
