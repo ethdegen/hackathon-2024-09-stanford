@@ -1,5 +1,4 @@
 import { promises as fs } from "fs";
-import { GroqInstance, groqClientPromise } from "./groqClient";
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 import { OpenAIInstance, openaiClientPromise } from "./openAIClient";
@@ -172,7 +171,7 @@ export async function generateMandARequestList(
       max_tokens: 128000,
     });
 
-    const generatedList: RequestListItem[] = JSON.parse(response.choices[0].message.content.trim());
+    const generatedList: RequestListItem[] = JSON.parse(response.message.content.trim());
     return generatedList;
   } catch (error) {
     console.error("Error generating M&A request list:", error);
