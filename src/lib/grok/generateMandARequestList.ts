@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { GroqInstance, groqClientPromise } from "./groqClient";
-import { utils, write } from 'xlsx';
+import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
 
 // Function to read file content asynchronously
@@ -71,14 +71,14 @@ async function convertToExcel(requestList: RequestListItem[]): Promise<Blob> {
 async function readExcelContent(filePath: string): Promise<string> {
   try {
     const buffer = await fs.readFile(filePath);
-    const workbook = read(buffer, { type: 'buffer' });
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const jsonData = utils.sheet_to_json(sheet);
+    const jsonData = XLSX.utils.sheet_to_json(sheet);
     return JSON.stringify(jsonData, null, 2);
   } catch (error) {
     console.error(`Error reading Excel file at ${filePath}:`, error);
-    throw error;
+    throw new Error(`Failed to read Excel file: ${filePath}`);
   }
 }
 
@@ -135,7 +135,7 @@ export async function generateMandARequestList(
 
   try {
     const response = await groq.chat.completions.create({
-      model: "llama3-groq-8b-8192",
+      model: "llama3-8b-8192",
       temperature: 0,
       messages: [
         { role: "system", content: systemPrompt },

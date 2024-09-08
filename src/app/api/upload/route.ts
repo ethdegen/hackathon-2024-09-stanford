@@ -3,20 +3,35 @@ import { NextResponse } from 'next/server';
 import { writeFile } from 'fs/promises';
 import path from 'path';
 
+const allowedFileTypes = {
+  priorPurchaseAgreement: ['.docx', '.txt'],
+  priorRequestList: ['.xlsx', '.xls'],
+  priorTermSheet: ['.docx', '.txt'],
+  currentTermSheet: ['.docx', '.txt']
+};
+
 export async function POST(request: Request) {
   const formData = await request.formData();
-  const files = ['priorPurchaseAgreement', 'priorRequestList', 'priorTermSheet', 'currentTermSheet'];
+  const uploadDir = path.join(process.cwd(), 'tmp');
+  const fileNames = {};
 
-  for (const file of files) {
-    const uploadedFile = formData.get(file) as File;
-    if (!uploadedFile) {
-      return NextResponse.json({ error: `${file} is required` }, { status: 400 });
+  for (const [key, file] of formData.entries()) {
+    if (file instanceof File) {
+      const fileExtension = path.extname(file.name).toLowerCase();
+      if (!allowedFileTypes[key]?.includes(fileExtension)) {
+        return NextResponse.json({ error: `Invalid file type for ${key}. Expected ${allowedFileTypes[key].join(' or ')}.` }, { status: 400 });
+      }
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const fileName = `${key}${fileExtension}`;
+      const filePath = path.join(uploadDir, fileName);
+      await writeFile(filePath, buffer);
+      fileNames[key] = fileName;
     }
-
-    const buffer = Buffer.from(await uploadedFile.arrayBuffer());
-    const filename = path.join(process.cwd(), 'tmp', uploadedFile.name);
-    await writeFile(filename, buffer);
   }
 
-  return NextResponse.json({ message: 'Files uploaded successfully' });
+  // Store the file names in a JSON file
+  await writeFile(path.join(uploadDir, 'fileNames.json'), JSON.stringify(fileNames));
+
+  return NextResponse.json({ message: 'Files uploaded successfully', fileNames });
 }
