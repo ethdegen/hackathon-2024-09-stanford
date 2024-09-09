@@ -33,19 +33,6 @@ export default function Home() {
           M&A request list generation has never been so easy - upload documents, review, and
           generate a comprehensive request list!
         </p>
-        <div className="my-8 border border-gray-100">
-          <video
-            width="500"
-            height="500"
-            loop
-            autoPlay={true}
-            preload="auto"
-            playsInline={true}
-          >
-            <source src="/demo.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        </div>
       </section>
 
       <section className="my-4">

@@ -1,8 +1,8 @@
 import { promises as fs } from "fs";
 import * as XLSX from 'xlsx';
 import mammoth from 'mammoth';
-import { OpenAIInstance, openaiClientPromise } from "./openAIClient";
-// import { ClaudeInstance, claudeClientPromise } from './claudeClient';
+import { GeminiInstance, geminiClientPromise } from "./geminiClient";
+import { SchemaType } from "@google/generative-ai";
 
 // Function to read file content asynchronously
 async function readFileContent(filePath: string): Promise<string> {
@@ -24,39 +24,14 @@ async function readFileContent(filePath: string): Promise<string> {
   }
 }
 
-/*async function initClaudeClient(): Promise<ClaudeInstance> {
+async function initGeminiClient(): Promise<GeminiInstance> {
   try {
-    console.log("Initializing Claude client...");
-    const claude = await claudeClientPromise;
-    console.log("Claude client initialized successfully.");
-    return claude;
+    console.log("Initializing Gemini client...");
+    const genAI = await geminiClientPromise;
+    console.log("Gemini client initialized successfully.");
+    return genAI;
   } catch (error) {
-    console.error("Error initializing Claude client:", error);
-    throw error;
-  }
-}*/
-
-// Initialize Groq Client
-async function initGroqClient(): Promise<GroqInstance> {
-  try {
-    console.log("Initializing Groq client...");
-    const groq = await groqClientPromise;
-    console.log("Groq client initialized successfully.");
-    return groq;
-  } catch (error) {
-    console.error("Error initializing OpenAI client:", error);
-    throw error;
-  }
-}
-
-async function initOpenAIClient(): Promise<OpenAIInstance> {
-  try {
-    console.log("Initializing OpenAI client...");
-    const openai = await openaiClientPromise;
-    console.log("OpenAI client initialized successfully.");
-    return openai;
-  } catch (error) {
-    console.error("Error initializing OpenAI client:", error);
+    console.error("Error initializing Gemini client:", error);
     throw error;
   }
 }
@@ -76,16 +51,16 @@ interface RequestListItem {
 // Function to convert the request list to Excel format
 async function convertToExcel(requestList: RequestListItem[]): Promise<Blob> {
   // Create a new workbook
-  const workbook = utils.book_new();
+  const workbook = XLSX.utils.book_new();
 
   // Convert the request list to a worksheet
-  const worksheet = utils.json_to_sheet(requestList);
+  const worksheet = XLSX.utils.json_to_sheet(requestList);
 
   // Add the worksheet to the workbook
-  utils.book_append_sheet(workbook, worksheet, "M&A Request List");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "M&A Request List");
 
   // Generate Excel file buffer
-  const excelBuffer = write(workbook, { bookType: 'xlsx', type: 'array' });
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 
   // Convert buffer to Blob
   const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -123,13 +98,11 @@ export async function generateMandARequestList(
   // Read and process the Excel file
   const priorRequestList = await readExcelContent(priorRequestListPath);
 
-  // Initialize Groq client
-  // const groq = await initGroqClient();
-
-  const openai = await initOpenAIClient();
+  // Initialize Gemini client
+  const genAI = await initGeminiClient();
 
   // Prepare the prompt for the LLM
-  const systemPrompt = `You are an experienced M&A lawyer tasked with creating a request list for a purchase agreement. 
+  const prompt = `You are an experienced M&A lawyer tasked with creating a request list for a purchase agreement. 
   Analyze the provided documents and generate a comprehensive request list. 
   Your output should be a JSON array of objects, each representing an item in the request list. 
   Each object should have the following structure:
@@ -144,9 +117,9 @@ export async function generateMandARequestList(
     "Comments": "",
     "VirtualDataRoomLocation": ""
   }
-  Some of these fields should be empty strings as placeholders.`;
+  Some of these fields should be empty strings as placeholders.
 
-  const userPrompt = `Prior Purchase Agreement:
+  Prior Purchase Agreement:
   ${priorPurchaseAgreement}
   
   Prior Request List (in JSON format):
@@ -161,17 +134,31 @@ export async function generateMandARequestList(
   Based on these documents, generate a comprehensive request list for the new purchase agreement.`;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      temperature: 0,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_tokens: 128000,
-    });
-
-    const generatedList: RequestListItem[] = JSON.parse(response.message.content.trim());
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro", 
+    generationConfig: {
+    responseMimeType: "application/json",
+    /*responseSchema: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          ItemName: SchemaType.STRING,
+          ItemDescription: SchemaType.STRING,
+          Status: SchemaType.STRING,
+          Priority: SchemaType.STRING,
+          DateReceived: SchemaType.STRING,
+          LLMExplanation: SchemaType.STRING,
+          CompanysResponse: SchemaType.STRING,
+          Comments: SchemaType.STRING,
+          VirtualDataRoomLocation: SchemaType.STRING,
+          },
+        },
+      },*/
+    },
+  });
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const generatedList: RequestListItem[] = JSON.parse(response.text().trim());
     return generatedList;
   } catch (error) {
     console.error("Error generating M&A request list:", error);
